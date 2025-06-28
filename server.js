@@ -29,6 +29,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const browser = await puppeteer.launch({
+  headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"],
+});
+
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Middleware to parse JSON bodies
 
