@@ -186,39 +186,41 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function generateInvoiceFromHTML(htmlContent, transactionID) {
-  const tmpDir = os.tmpdir();
-  const filePath = path.join(
-    tmpDir,
-    `invoice-${transactionID || Date.now()}.pdf`
-  );
-  // Ensure folder exists
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  try {
+    const tmpDir = os.tmpdir();
+    const filePath = path.join(
+      tmpDir,
+      `invoice-${transactionID || Date.now()}.pdf`
+    );
+    console.log("Creating PDF at:", filePath);
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-  const page = await browser.newPage();
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
 
-  await page.setContent(htmlContent, {
-    waitUntil: "networkidle0",
-  });
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    await page.pdf({
+      path: filePath,
+      format: "A4",
+      printBackground: true,
+      margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
+    });
 
-  await page.pdf({
-    path: filePath,
-    format: "A4",
-    printBackground: true,
-    margin: {
-      top: "20mm",
-      bottom: "20mm",
-      left: "15mm",
-      right: "15mm",
-    },
-  });
+    await browser.close();
 
-  await browser.close();
-  return filePath;
+    if (!fs.existsSync(filePath)) {
+      throw new Error("PDF file was not created");
+    }
+
+    return filePath;
+  } catch (err) {
+    console.error("Puppeteer PDF generation failed:", err);
+    throw err;
+  }
 }
+
 // EMAILS
 
 // Health check endpoint
